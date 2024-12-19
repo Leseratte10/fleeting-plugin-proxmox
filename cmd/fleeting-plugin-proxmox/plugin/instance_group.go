@@ -184,7 +184,7 @@ func (ig *InstanceGroup) Update(ctx context.Context, update func(instance string
 }
 
 // ConnectInfo implements provider.InstanceGroup.
-//nolint:gocognit,cyclop
+//nolint:gocognit,cyclop,goconst
 func (ig *InstanceGroup) ConnectInfo(ctx context.Context, instance string) (provider.ConnectInfo, error) {
 	VMID, err := strconv.Atoi(instance)
 	if err != nil {
