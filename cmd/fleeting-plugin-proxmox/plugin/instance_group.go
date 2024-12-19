@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"net"
 	"slices"
 	"strconv"
 	"sync"
@@ -28,10 +29,10 @@ type InstanceGroup struct {
 	log     hclog.Logger    `json:"-"`
 	proxmox *proxmox.Client `json:"-"`
 
-	// This mutex is used when clonning template for new instances. It is required for blocking other
+	// This mutex is used when cloning template for new instances. It is required for blocking other
 	// operations like collection or update, because when new instance is created with recycled ID then for
 	// a brief period it will be reported from Proxmox with old name (e.g. InstanceNameRemoving).
-	instanceClonningMu sync.Mutex `json:"-"`
+	instanceCloningMu sync.Mutex `json:"-"`
 
 	// Trigger for collector to start removed instances collection.
 	instanceCollectionTrigger chan struct{} `json:"-"`
@@ -118,12 +119,12 @@ func (ig *InstanceGroup) Increase(ctx context.Context, count int) (int, error) {
 		succeeded   = 0
 		succeededMu = new(sync.Mutex)
 
-		// We need to mutex clonning as Proxmox will fail multiple requests in parallel
+		// We need to mutex cloning as Proxmox will fail multiple requests in parallel
 		cloneMu = new(sync.Mutex)
 	)
 
-	ig.instanceClonningMu.Lock()
-	defer ig.instanceClonningMu.Unlock()
+	ig.instanceCloningMu.Lock()
+	defer ig.instanceCloningMu.Unlock()
 
 	for n := 0; n < count; n++ {
 		errorGroup.Go(func() error {
@@ -150,8 +151,8 @@ func (ig *InstanceGroup) Increase(ctx context.Context, count int) (int, error) {
 
 // Update implements provider.InstanceGroup.
 func (ig *InstanceGroup) Update(ctx context.Context, update func(instance string, state provider.State)) error {
-	ig.instanceClonningMu.Lock()
-	defer ig.instanceClonningMu.Unlock()
+	ig.instanceCloningMu.Lock()
+	defer ig.instanceCloningMu.Unlock()
 
 	pool, err := ig.getProxmoxPool(ctx)
 	if err != nil {
@@ -199,22 +200,92 @@ func (ig *InstanceGroup) ConnectInfo(ctx context.Context, instance string) (prov
 		return provider.ConnectInfo{}, fmt.Errorf("failed to retrieve instance vmid='%d' interfaces: %w", VMID, err)
 	}
 
+	internalIP = ""
+	externalIP = ""
+
 	for _, networkInterface := range networkInterfaces {
 		if networkInterface.Name != ig.Settings.InstanceNetworkInterface {
 			continue
 		}
 
 		for _, address := range networkInterface.IPAddresses {
-			return provider.ConnectInfo{
-				ID:              instance,
-				InternalAddr:    address.IPAddress,
-				ExternalAddr:    address.IPAddress,
-				ConnectorConfig: ig.FleetingSettings.ConnectorConfig,
-			}, nil
+
+			if ig.Settings.InstanceNetworkProtocol == "first-found" {
+				// Return the first address found, no matter the type
+				// (may not be deterministic)
+				internalIP = address.IPAddress
+				externalIP = address.IPAddress
+				break
+			}
+
+			foundIP = net.ParseIP(address.IPAddress)
+			
+			if (foundIP.isLoopback()) {
+				continue
+			}
+
+			if (address.IPAddressType == "ipv6") {
+				// Address is IPv6, check the different types.
+			
+				if (foundIP.isLinkLocalUnicast() && ig.Settings.InstanceNetworkProtocol == "ipv6ll") {
+					// IPv6 link-local fe80
+					internalIP = address.IPAddress
+				}
+				else if (foundIP.isPrivate() && ig.Settings.InstanceNetworkProtocol == "ipv6") {
+					// IPv6 ULA
+					internalIP = address.IPAddress
+				}
+				else if (foundIP.isGlobalUnicast() && ig.Settings.InstanceNetworkProtocol == "ipv6") {
+					// IPv6 GUA
+					externalIP = address.IPAddress
+				}
+			}
+
+			else if (address.IPAddressType == "ipv4" && ig.Settings.InstanceNetworkProtocol == "ipv4") {
+				if (foundIP.isLinkLocalUnicast()) {
+					// link-local is rarely used in IPv4 and probably causes more issues than it solves. Skipping.
+					continue
+				}
+				else if (foundIP.isPrivate()) {
+					internalIP = address.IPAddress
+				}
+				else if (foundIP.isGlobalUnicast()) {
+					externalIP = address.IPAddress
+				}
+
+			}
+
+			if (internalIP != "" && externalIP != "") {
+				// We found both an internal and external IP, no need to continue searching.
+				break
+			}
+
 		}
 	}
 
-	return provider.ConnectInfo{}, ErrNoIPAddress
+	if internalIP == "" && externalIP == "" {
+		// Neither internal nor external IP matching the configured address type was found.
+		// Abort.
+		return provider.ConnectInfo{}, ErrNoIPAddress
+	}
+
+	// If we only found an internal or only an external IP, set the other variable to the same IP
+	// A cleaner solution would probably be to omit the empty field from the ConnectInfo response
+	// (only one of them is mandatory), but that may be a breaking change?
+	if (internalIP == "") {
+		internalIP = externalIP
+	}
+	if (externalIP == "") {
+		externalIP = internalIP
+	}
+
+	return provider.ConnectInfo{
+		ID:              instance,
+		InternalAddr:    internalIP,
+		ExternalAddr:    externalIP,
+		ConnectorConfig: ig.FleetingSettings.ConnectorConfig,
+	}, nil
+
 }
 
 // Decrease implements provider.InstanceGroup.
