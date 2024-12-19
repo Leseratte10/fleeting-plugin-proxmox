@@ -200,8 +200,11 @@ func (ig *InstanceGroup) ConnectInfo(ctx context.Context, instance string) (prov
 		return provider.ConnectInfo{}, fmt.Errorf("failed to retrieve instance vmid='%d' interfaces: %w", VMID, err)
 	}
 
+	requested := ig.Settings.InstanceNetworkProtocol
 	internalIP := ""
 	externalIP := ""
+	potentialInternalIPv4 := ""
+	potentialExternalIPv4 := ""
 
 	for _, networkInterface := range networkInterfaces {
 		if networkInterface.Name != ig.Settings.InstanceNetworkInterface {
@@ -209,50 +212,41 @@ func (ig *InstanceGroup) ConnectInfo(ctx context.Context, instance string) (prov
 		}
 
 		for _, address := range networkInterface.IPAddresses {
-
-			if ig.Settings.InstanceNetworkProtocol == "first-found" {
-				// Return the first address found, no matter the type
-				// (may not be deterministic)
-				internalIP = address.IPAddress
-				externalIP = address.IPAddress
-
-				break
-			}
-
 			foundIP := net.ParseIP(address.IPAddress)
 
 			if foundIP.IsLoopback() {
 				continue
 			}
 
-			if address.IPAddressType == "ipv6" {
-				// Address is IPv6, check the different types.
-
-				if foundIP.IsLinkLocalUnicast() && ig.Settings.InstanceNetworkProtocol == "ipv6ll" {
-					// IPv6 link-local fe80
+			if requested == "ipv6ll" {
+				if address.IPAddressType == "ipv6" && foundIP.IsLinkLocalUnicast() {
 					internalIP = address.IPAddress
-				} else if foundIP.IsPrivate() && ig.Settings.InstanceNetworkProtocol == "ipv6" {
-					// IPv6 ULA
-					internalIP = address.IPAddress
-				} else if foundIP.IsGlobalUnicast() && ig.Settings.InstanceNetworkProtocol == "ipv6" {
-					// IPv6 GUA
-					externalIP = address.IPAddress
+					break
 				}
-			} else if address.IPAddressType == "ipv4" && ig.Settings.InstanceNetworkProtocol == "ipv4" {
-				if foundIP.IsLinkLocalUnicast() {
-					// link-local is rarely used in IPv4 and probably causes more issues than it solves. Skipping.
-					continue
-				} else if foundIP.IsPrivate() {
+			} else if address.IPAddressType == "ipv4" {
+				if foundIP.IsPrivate() {
+					potentialInternalIPv4 = address.IPAddress
+				} else if foundIP.IsGlobalUnicast() {
+					potentialExternalIPv4 = address.IPAddress
+				}
+			} else if address.IPAddressType == "ipv6" {
+				if foundIP.IsPrivate() {
 					internalIP = address.IPAddress
 				} else if foundIP.IsGlobalUnicast() {
 					externalIP = address.IPAddress
 				}
 			}
+		}
+	}
 
-			if internalIP != "" && externalIP != "" {
-				// We found both an internal and external IP, no need to continue searching.
-				break
-			}
+	if requested == "any" {
+		// If any protocol was requested and we didn't find working IPv6 adresses, 
+		// use the IPv4 addresses instead.
+		if internalIP == "" {
+			internalIP = potentialInternalIPv4
+		}
+		if externalIP == "" {
+			externalIP = potentialExternalIPv4
 		}
 	}
 
@@ -268,6 +262,7 @@ func (ig *InstanceGroup) ConnectInfo(ctx context.Context, instance string) (prov
 	if internalIP == "" {
 		internalIP = externalIP
 	}
+
 	if externalIP == "" {
 		externalIP = internalIP
 	}

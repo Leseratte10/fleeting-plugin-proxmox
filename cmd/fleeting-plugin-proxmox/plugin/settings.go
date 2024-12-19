@@ -43,8 +43,7 @@ type Settings struct {
 	// Network interface to read instance's IP address from.
 	InstanceNetworkInterface string `json:"instance_network_interface"`
 
-	// Network protocol (ipv4, ipv6, ipv6ll, any or first-found)
-	//   - "first-found" uses the first IP returned by the agent, may not be deterministic.
+	// Network protocol (ipv4, ipv6, ipv6ll or any)
 	//   - "ipv4" tries to find one internal and one external IPv4 address
 	//   - "ipv6" tries to find one internal (ULA) and one global (GUA) IPv6 address
 	//   - "ipv6ll" will only return one single link-local IPv6 address
