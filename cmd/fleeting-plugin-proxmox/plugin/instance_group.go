@@ -220,31 +220,31 @@ func (ig *InstanceGroup) ConnectInfo(ctx context.Context, instance string) (prov
 
 			foundIP := net.ParseIP(address.IPAddress)
 			
-			if (foundIP.isLoopback()) {
+			if (foundIP.IsLoopback()) {
 				continue
 			}
 
 			if (address.IPAddressType == "ipv6") {
 				// Address is IPv6, check the different types.
 			
-				if (foundIP.isLinkLocalUnicast() && ig.Settings.InstanceNetworkProtocol == "ipv6ll") {
+				if (foundIP.IsLinkLocalUnicast() && ig.Settings.InstanceNetworkProtocol == "ipv6ll") {
 					// IPv6 link-local fe80
 					internalIP = address.IPAddress
-				} else if (foundIP.isPrivate() && ig.Settings.InstanceNetworkProtocol == "ipv6") {
+				} else if (foundIP.IsPrivate() && ig.Settings.InstanceNetworkProtocol == "ipv6") {
 					// IPv6 ULA
 					internalIP = address.IPAddress
-				} else if (foundIP.isGlobalUnicast() && ig.Settings.InstanceNetworkProtocol == "ipv6") {
+				} else if (foundIP.IsGlobalUnicast() && ig.Settings.InstanceNetworkProtocol == "ipv6") {
 					// IPv6 GUA
 					externalIP = address.IPAddress
 				}
 
 			} else if (address.IPAddressType == "ipv4" && ig.Settings.InstanceNetworkProtocol == "ipv4") {
-				if (foundIP.isLinkLocalUnicast()) {
+				if (foundIP.IsLinkLocalUnicast()) {
 					// link-local is rarely used in IPv4 and probably causes more issues than it solves. Skipping.
 					continue
-				} else if (foundIP.isPrivate()) {
+				} else if (foundIP.IsPrivate()) {
 					internalIP = address.IPAddress
-				} else if (foundIP.isGlobalUnicast()) {
+				} else if (foundIP.IsGlobalUnicast()) {
 					externalIP = address.IPAddress
 				}
 
