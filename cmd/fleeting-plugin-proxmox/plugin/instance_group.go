@@ -20,8 +20,6 @@ var _ provider.InstanceGroup = (*InstanceGroup)(nil)
 
 const triggerChannelCapacity = 100
 
-var ErrNoIPAddress = errors.New("failed to determine IP address for instance")
-
 type InstanceGroup struct {
 	Settings         `json:",inline"`
 	FleetingSettings provider.Settings `json:"-"`
@@ -184,6 +182,7 @@ func (ig *InstanceGroup) Update(ctx context.Context, update func(instance string
 }
 
 // ConnectInfo implements provider.InstanceGroup.
+//nolint:gocognit
 func (ig *InstanceGroup) ConnectInfo(ctx context.Context, instance string) (provider.ConnectInfo, error) {
 	VMID, err := strconv.Atoi(instance)
 	if err != nil {
@@ -211,19 +210,22 @@ func (ig *InstanceGroup) ConnectInfo(ctx context.Context, instance string) (prov
 			continue
 		}
 
+		// Iterate through all IP addresses available on this interface.
 		for _, address := range networkInterface.IPAddresses {
 			foundIP := net.ParseIP(address.IPAddress)
 
+			// Skip loopback IPs 127.0.0.0/8 and ::1
 			if foundIP.IsLoopback() {
 				continue
 			}
 
 			if requested == "ipv6ll" {
+				// Return IPv6 link-local address if explicitly requested.
 				if address.IPAddressType == "ipv6" && foundIP.IsLinkLocalUnicast() {
 					internalIP = address.IPAddress
 					break
 				}
-				
+
 				continue
 			}
 
@@ -233,8 +235,8 @@ func (ig *InstanceGroup) ConnectInfo(ctx context.Context, instance string) (prov
 				} else if foundIP.IsGlobalUnicast() {
 					potentialExternalIPv4 = address.IPAddress
 				}
-			} 
-			
+			}
+
 			if address.IPAddressType == "ipv6" {
 				if foundIP.IsPrivate() {
 					internalIP = address.IPAddress
@@ -245,22 +247,26 @@ func (ig *InstanceGroup) ConnectInfo(ctx context.Context, instance string) (prov
 		}
 	}
 
-	if requested == "any" {
+	// At this point, externalIP and internalIP are IPv6 adresses. 
+	// If the user requested "any", prioritize these. 
+	// If the user requested "ipv4", overwrite them with IPv4 adresses.
+
+	if requested == "any" || requested == "ipv4" {
 		// If any protocol was requested and we didn't find working IPv6 adresses,
 		// use the IPv4 addresses instead.
-		if internalIP == "" {
+		if internalIP == "" || requested == "ipv4" {
 			internalIP = potentialInternalIPv4
 		}
 
-		if externalIP == "" {
+		if externalIP == "" || requested == "ipv4" {
 			externalIP = potentialExternalIPv4
 		}
-	}
+	} 
 
 	if internalIP == "" && externalIP == "" {
 		// Neither internal nor external IP matching the configured address type was found.
 		// Abort.
-		return provider.ConnectInfo{}, ErrNoIPAddress
+		return provider.ConnectInfo{}, fmt.Errorf("failed to determine IP address of type %s", requested)
 	}
 
 	// If we only found an internal or only an external IP, set the other variable to the same IP
