@@ -223,6 +223,7 @@ func (ig *InstanceGroup) ConnectInfo(ctx context.Context, instance string) (prov
 					internalIP = address.IPAddress
 					break
 				}
+				
 				continue
 			}
 
@@ -232,7 +233,9 @@ func (ig *InstanceGroup) ConnectInfo(ctx context.Context, instance string) (prov
 				} else if foundIP.IsGlobalUnicast() {
 					potentialExternalIPv4 = address.IPAddress
 				}
-			} else if address.IPAddressType == "ipv6" {
+			} 
+			
+			if address.IPAddressType == "ipv6" {
 				if foundIP.IsPrivate() {
 					internalIP = address.IPAddress
 				} else if foundIP.IsGlobalUnicast() {
