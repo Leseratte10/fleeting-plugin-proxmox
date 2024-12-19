@@ -2,6 +2,7 @@ package plugin
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"net"
 	"slices"
@@ -18,6 +19,8 @@ import (
 var _ provider.InstanceGroup = (*InstanceGroup)(nil)
 
 const triggerChannelCapacity = 100
+
+var ErrNoIPAddress = errors.New("failed to determine IP address for instance")
 
 type InstanceGroup struct {
 	Settings         `json:",inline"`
@@ -181,7 +184,7 @@ func (ig *InstanceGroup) Update(ctx context.Context, update func(instance string
 }
 
 // ConnectInfo implements provider.InstanceGroup.
-//nolint:gocognit
+//nolint:gocognit,cyclop
 func (ig *InstanceGroup) ConnectInfo(ctx context.Context, instance string) (provider.ConnectInfo, error) {
 	VMID, err := strconv.Atoi(instance)
 	if err != nil {
@@ -265,7 +268,7 @@ func (ig *InstanceGroup) ConnectInfo(ctx context.Context, instance string) (prov
 	if internalIP == "" && externalIP == "" {
 		// Neither internal nor external IP matching the configured address type was found.
 		// Abort.
-		return provider.ConnectInfo{}, fmt.Errorf("failed to determine IP address of type %s", requested)
+		return provider.ConnectInfo{}, ErrNoIPAddress
 	}
 
 	// If we only found an internal or only an external IP, set the other variable to the same IP
