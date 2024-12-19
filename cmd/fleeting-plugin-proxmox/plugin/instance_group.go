@@ -215,6 +215,7 @@ func (ig *InstanceGroup) ConnectInfo(ctx context.Context, instance string) (prov
 				// (may not be deterministic)
 				internalIP = address.IPAddress
 				externalIP = address.IPAddress
+				
 				break
 			}
 
@@ -254,7 +255,6 @@ func (ig *InstanceGroup) ConnectInfo(ctx context.Context, instance string) (prov
 				// We found both an internal and external IP, no need to continue searching.
 				break
 			}
-
 		}
 	}
 
@@ -280,7 +280,6 @@ func (ig *InstanceGroup) ConnectInfo(ctx context.Context, instance string) (prov
 		ExternalAddr:    externalIP,
 		ConnectorConfig: ig.FleetingSettings.ConnectorConfig,
 	}, nil
-
 }
 
 // Decrease implements provider.InstanceGroup.
