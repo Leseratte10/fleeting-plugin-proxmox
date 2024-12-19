@@ -23,5 +23,5 @@ jobs:
       - uses: actions/upload-artifact@v4
         with:
           name: upload
-          path: fleeting-plugin-proxmmox
+          path: fleeting-plugin-proxmox
           retention-days: 1
