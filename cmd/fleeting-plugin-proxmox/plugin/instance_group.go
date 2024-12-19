@@ -230,26 +230,21 @@ func (ig *InstanceGroup) ConnectInfo(ctx context.Context, instance string) (prov
 				if (foundIP.isLinkLocalUnicast() && ig.Settings.InstanceNetworkProtocol == "ipv6ll") {
 					// IPv6 link-local fe80
 					internalIP = address.IPAddress
-				}
-				else if (foundIP.isPrivate() && ig.Settings.InstanceNetworkProtocol == "ipv6") {
+				} else if (foundIP.isPrivate() && ig.Settings.InstanceNetworkProtocol == "ipv6") {
 					// IPv6 ULA
 					internalIP = address.IPAddress
-				}
-				else if (foundIP.isGlobalUnicast() && ig.Settings.InstanceNetworkProtocol == "ipv6") {
+				} else if (foundIP.isGlobalUnicast() && ig.Settings.InstanceNetworkProtocol == "ipv6") {
 					// IPv6 GUA
 					externalIP = address.IPAddress
 				}
-			}
-
-			else if (address.IPAddressType == "ipv4" && ig.Settings.InstanceNetworkProtocol == "ipv4") {
+				
+			} else if (address.IPAddressType == "ipv4" && ig.Settings.InstanceNetworkProtocol == "ipv4") {
 				if (foundIP.isLinkLocalUnicast()) {
 					// link-local is rarely used in IPv4 and probably causes more issues than it solves. Skipping.
 					continue
-				}
-				else if (foundIP.isPrivate()) {
+				} else if (foundIP.isPrivate()) {
 					internalIP = address.IPAddress
-				}
-				else if (foundIP.isGlobalUnicast()) {
+				} else if (foundIP.isGlobalUnicast()) {
 					externalIP = address.IPAddress
 				}
 
