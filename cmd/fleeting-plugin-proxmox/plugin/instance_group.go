@@ -200,8 +200,8 @@ func (ig *InstanceGroup) ConnectInfo(ctx context.Context, instance string) (prov
 		return provider.ConnectInfo{}, fmt.Errorf("failed to retrieve instance vmid='%d' interfaces: %w", VMID, err)
 	}
 
-	internalIP = ""
-	externalIP = ""
+	internalIP := ""
+	externalIP := ""
 
 	for _, networkInterface := range networkInterfaces {
 		if networkInterface.Name != ig.Settings.InstanceNetworkInterface {
@@ -237,7 +237,7 @@ func (ig *InstanceGroup) ConnectInfo(ctx context.Context, instance string) (prov
 					// IPv6 GUA
 					externalIP = address.IPAddress
 				}
-				
+
 			} else if (address.IPAddressType == "ipv4" && ig.Settings.InstanceNetworkProtocol == "ipv4") {
 				if (foundIP.isLinkLocalUnicast()) {
 					// link-local is rarely used in IPv4 and probably causes more issues than it solves. Skipping.
