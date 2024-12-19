@@ -19,7 +19,7 @@ var _ provider.InstanceGroup = (*InstanceGroup)(nil)
 
 const triggerChannelCapacity = 100
 
-var ErrNoIPv4Address = errors.New("failed to determine IPv4 address for instance")
+var ErrNoIPAddress = errors.New("failed to determine IP address for instance")
 
 type InstanceGroup struct {
 	Settings         `json:",inline"`
@@ -205,10 +205,6 @@ func (ig *InstanceGroup) ConnectInfo(ctx context.Context, instance string) (prov
 		}
 
 		for _, address := range networkInterface.IPAddresses {
-			if address.IPAddressType != "ipv4" {
-				continue
-			}
-
 			return provider.ConnectInfo{
 				ID:              instance,
 				InternalAddr:    address.IPAddress,
@@ -218,7 +214,7 @@ func (ig *InstanceGroup) ConnectInfo(ctx context.Context, instance string) (prov
 		}
 	}
 
-	return provider.ConnectInfo{}, ErrNoIPv4Address
+	return provider.ConnectInfo{}, ErrNoIPAddress
 }
 
 // Decrease implements provider.InstanceGroup.
