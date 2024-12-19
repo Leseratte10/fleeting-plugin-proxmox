@@ -215,43 +215,41 @@ func (ig *InstanceGroup) ConnectInfo(ctx context.Context, instance string) (prov
 				// (may not be deterministic)
 				internalIP = address.IPAddress
 				externalIP = address.IPAddress
-				
+
 				break
 			}
 
 			foundIP := net.ParseIP(address.IPAddress)
-			
-			if (foundIP.IsLoopback()) {
+
+			if foundIP.IsLoopback() {
 				continue
 			}
 
-			if (address.IPAddressType == "ipv6") {
+			if address.IPAddressType == "ipv6" {
 				// Address is IPv6, check the different types.
-			
-				if (foundIP.IsLinkLocalUnicast() && ig.Settings.InstanceNetworkProtocol == "ipv6ll") {
+
+				if foundIP.IsLinkLocalUnicast() && ig.Settings.InstanceNetworkProtocol == "ipv6ll" {
 					// IPv6 link-local fe80
 					internalIP = address.IPAddress
-				} else if (foundIP.IsPrivate() && ig.Settings.InstanceNetworkProtocol == "ipv6") {
+				} else if foundIP.IsPrivate() && ig.Settings.InstanceNetworkProtocol == "ipv6" {
 					// IPv6 ULA
 					internalIP = address.IPAddress
-				} else if (foundIP.IsGlobalUnicast() && ig.Settings.InstanceNetworkProtocol == "ipv6") {
+				} else if foundIP.IsGlobalUnicast() && ig.Settings.InstanceNetworkProtocol == "ipv6" {
 					// IPv6 GUA
 					externalIP = address.IPAddress
 				}
-
-			} else if (address.IPAddressType == "ipv4" && ig.Settings.InstanceNetworkProtocol == "ipv4") {
-				if (foundIP.IsLinkLocalUnicast()) {
+			} else if address.IPAddressType == "ipv4" && ig.Settings.InstanceNetworkProtocol == "ipv4" {
+				if foundIP.IsLinkLocalUnicast() {
 					// link-local is rarely used in IPv4 and probably causes more issues than it solves. Skipping.
 					continue
-				} else if (foundIP.IsPrivate()) {
+				} else if foundIP.IsPrivate() {
 					internalIP = address.IPAddress
-				} else if (foundIP.IsGlobalUnicast()) {
+				} else if foundIP.IsGlobalUnicast() {
 					externalIP = address.IPAddress
 				}
-
 			}
 
-			if (internalIP != "" && externalIP != "") {
+			if internalIP != "" && externalIP != "" {
 				// We found both an internal and external IP, no need to continue searching.
 				break
 			}
@@ -267,10 +265,10 @@ func (ig *InstanceGroup) ConnectInfo(ctx context.Context, instance string) (prov
 	// If we only found an internal or only an external IP, set the other variable to the same IP
 	// A cleaner solution would probably be to omit the empty field from the ConnectInfo response
 	// (only one of them is mandatory), but that may be a breaking change?
-	if (internalIP == "") {
+	if internalIP == "" {
 		internalIP = externalIP
 	}
-	if (externalIP == "") {
+	if externalIP == "" {
 		externalIP = internalIP
 	}
 

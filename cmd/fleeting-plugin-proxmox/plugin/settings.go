@@ -10,7 +10,7 @@ var ErrRequiredSettingMissing = errors.New("required setting is missing")
 // Default values for plugin settings.
 const (
 	DefaultInstanceNetworkInterface = "ens18"
-	DefaultInstanceNetworkProtocol = "ipv4"
+	DefaultInstanceNetworkProtocol  = "ipv4"
 
 	DefaultInstanceNameCreating = "fleeting-creating"
 	DefaultInstanceNameRunning  = "fleeting-running"
