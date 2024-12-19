@@ -221,15 +221,21 @@ func (ig *InstanceGroup) ConnectInfo(ctx context.Context, instance string) (prov
 				continue
 			}
 
+			// It looks like Gitlab has a bug in their runners or in their platform
+			// that makes requests to link-local adresses fail. 
+			// I've commented out that code in the meantime. 
+			// I'll open a bug report with Gitlab.
+			
 			if requested == "ipv6ll" {
 				// Return IPv6 link-local address if explicitly requested.
 				if address.IPAddressType == "ipv6" && foundIP.IsLinkLocalUnicast() {
-					internalIP = address.IPAddress
+					internalIP = address.IPAddress + "%eth0"
 					break
 				}
 
 				continue
 			}
+			
 
 			if address.IPAddressType == "ipv4" {
 				if foundIP.IsPrivate() {
