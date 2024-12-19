@@ -223,7 +223,10 @@ func (ig *InstanceGroup) ConnectInfo(ctx context.Context, instance string) (prov
 					internalIP = address.IPAddress
 					break
 				}
-			} else if address.IPAddressType == "ipv4" {
+				continue
+			}
+
+			if address.IPAddressType == "ipv4" {
 				if foundIP.IsPrivate() {
 					potentialInternalIPv4 = address.IPAddress
 				} else if foundIP.IsGlobalUnicast() {
@@ -240,11 +243,12 @@ func (ig *InstanceGroup) ConnectInfo(ctx context.Context, instance string) (prov
 	}
 
 	if requested == "any" {
-		// If any protocol was requested and we didn't find working IPv6 adresses, 
+		// If any protocol was requested and we didn't find working IPv6 adresses,
 		// use the IPv4 addresses instead.
 		if internalIP == "" {
 			internalIP = potentialInternalIPv4
 		}
+
 		if externalIP == "" {
 			externalIP = potentialExternalIPv4
 		}
