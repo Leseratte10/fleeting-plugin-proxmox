@@ -218,7 +218,7 @@ func (ig *InstanceGroup) ConnectInfo(ctx context.Context, instance string) (prov
 				break
 			}
 
-			foundIP = net.ParseIP(address.IPAddress)
+			foundIP := net.ParseIP(address.IPAddress)
 			
 			if (foundIP.isLoopback()) {
 				continue
