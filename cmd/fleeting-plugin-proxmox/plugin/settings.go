@@ -10,6 +10,7 @@ var ErrRequiredSettingMissing = errors.New("required setting is missing")
 // Default values for plugin settings.
 const (
 	DefaultInstanceNetworkInterface = "ens18"
+	DefaultInstanceNetworkProtocol  = "ipv4"
 
 	DefaultInstanceNameCreating = "fleeting-creating"
 	DefaultInstanceNameRunning  = "fleeting-running"
@@ -39,8 +40,16 @@ type Settings struct {
 	// Maximum instances than can be deployed.
 	MaxInstances *int `json:"max_instances,omitempty"`
 
-	// Network interface to read instance's IPv4 address from.
+	// Network interface to read instance's IP address from.
 	InstanceNetworkInterface string `json:"instance_network_interface"`
+
+	// Network protocol (ipv4, ipv6, ipv6ll or any)
+	//   - "ipv4" tries to find one internal and one external IPv4 address
+	//   - "ipv6" tries to find one internal (ULA) and one global (GUA) IPv6 address
+	//   - "ipv6ll" will only return one single link-local IPv6 address
+	//   - "any" will prioritize IPv6 but return IPv4 if there is no IPv6.
+	// Default is "ipv4" to not break existing setups - might be switched to any in the future.
+	InstanceNetworkProtocol string `json:"instance_network_protocol"`
 
 	// Name to set for instances during creation.
 	InstanceNameCreating string `json:"instance_name_creating"`
@@ -67,6 +76,10 @@ func (s *Settings) FillWithDefaults() {
 
 	if s.InstanceNameRemoving == "" {
 		s.InstanceNameRemoving = DefaultInstanceNameRemoving
+	}
+
+	if s.InstanceNetworkProtocol == "" {
+		s.InstanceNetworkProtocol = DefaultInstanceNetworkProtocol
 	}
 }
 
