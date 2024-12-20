@@ -17,8 +17,8 @@ var ErrNotFound = errors.New("not found")
 
 type Credentials struct {
 	Username  string `json:"username"`
-	Password  string `json:"password"`	          // Password or token secret
-	TokenID   string `json:"token,omitifempty"`
+	Password  string `json:"password"`            // Password or token secret
+	TokenID   string `json:"token,omitempty"`
 	OtpSecret string `json:"otpsecret,omitempty"` // Secret token for OTP generation
 	Path      string `json:"path,omitempty"`
 	Privs     string `json:"privs,omitempty"`
@@ -93,26 +93,26 @@ func (ig *InstanceGroup) getProxmoxClient() (*proxmox.Client, error) {
 		proxmoxCredentials := proxmox.Credentials{}
 		proxmoxCredentials.Username = credentials.Username
 		proxmoxCredentials.Password = credentials.Password
-		proxmoxCredentials.Path     = credentials.Path
-		proxmoxCredentials.Privs    = credentials.Privs
-		proxmoxCredentials.Realm    = credentials.Realm
+		proxmoxCredentials.Path = credentials.Path
+		proxmoxCredentials.Privs = credentials.Privs
+		proxmoxCredentials.Realm = credentials.Realm
 
 		return proxmox.NewClient(
 			url.JoinPath("/api2/json").String(),
 			proxmox.WithCredentials(&proxmoxCredentials),
 			proxmox.WithHTTPClient(&httpClient),
 		), nil
-	} else {
-		// Token available, log in with API token
-		apiToken := fmt.Sprintf("%s@%s!%s", credentials.Username, credentials.Realm, credentials.TokenID)
+	} 
+	
+	// Token available, log in with API token
+	apiToken := fmt.Sprintf("%s@%s!%s", credentials.Username, credentials.Realm, credentials.TokenID)
 
-		return proxmox.NewClient(
-			url.JoinPath("/api2/json").String(),
-			proxmox.WithAPIToken(apiToken, credentials.Password),
-			proxmox.WithHTTPClient(&httpClient),
-		), nil
-	}
-
+	return proxmox.NewClient(
+		url.JoinPath("/api2/json").String(),
+		proxmox.WithAPIToken(apiToken, credentials.Password),
+		proxmox.WithHTTPClient(&httpClient),
+	), nil
+	
 	
 }
 

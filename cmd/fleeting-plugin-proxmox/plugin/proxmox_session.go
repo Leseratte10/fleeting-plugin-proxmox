@@ -14,7 +14,7 @@ func (ig *InstanceGroup) startSessionTicketRefresher() {
 
 	go func() {
 		defer ig.sessionTicketRefresherWaitGroup.Done()
-		//ig.runSessionTicketRefresher()
+		// ig.runSessionTicketRefresher()
 	}()
 }
 
