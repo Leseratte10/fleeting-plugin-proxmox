@@ -44,7 +44,7 @@ func (ig *InstanceGroup) runSessionTicketRefresher() {
 				//proxmoxCredentials.Password = ig.proxmox.session.Ticket
 
 				// Refresh Ticket using old Ticket
-				_, err = ig.proxmox.Ticket(ctx, *proxmoxCredentials)
+				_, err = ig.proxmox.Ticket(ctx, proxmoxCredentials)
 				if err != nil {
 					ig.log.Error("failed to refresh proxmox session", "err", err)
 				}
