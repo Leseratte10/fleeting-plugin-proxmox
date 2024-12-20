@@ -8,7 +8,7 @@ import (
 )
 
 const (
-	sessionTicketRefreshInterval = 1 * time.Hour
+	sessionTicketRefreshInterval = 1 * time.Minute
 	sessionTicketRefreshTimeout  = 5 * time.Second
 )
 
