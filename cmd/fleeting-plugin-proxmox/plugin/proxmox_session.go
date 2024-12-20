@@ -3,10 +3,12 @@ package plugin
 import (
 	"context"
 	"time"
+
+	"github.com/luthermonson/go-proxmox"
 )
 
 const (
-	sessionTicketRefreshInterval = 60 * time.Second
+	sessionTicketRefreshInterval = 1 * time.Hour
 	sessionTicketRefreshTimeout  = 5 * time.Second
 )
 
@@ -30,13 +32,24 @@ func (ig *InstanceGroup) runSessionTicketRefresher() {
 				ctx, cancel := context.WithTimeout(context.Background(), sessionTicketRefreshTimeout)
 				defer cancel()
 
+				credentials, err := ig.getProxmoxCredentials()
+				if err != nil {
+					ig.log.Error("failed to refresh proxmox session, could not read credentials", "err", err)
+					return
+				}
+
+				proxmoxCredentials := proxmox.Credentials{}
+				proxmoxCredentials.Username = credentials.Username
+				//proxmoxCredentials.Realm = credentials.Realm
+				//proxmoxCredentials.Password = ig.proxmox.session.Ticket
+
 				// Refresh Ticket using old Ticket
-				_, err := ig.proxmox.Ticket(ctx, nil)
+				_, err = ig.proxmox.Ticket(ctx, *proxmoxCredentials)
 				if err != nil {
 					ig.log.Error("failed to refresh proxmox session", "err", err)
 				}
 
-				ig.log.Error("refreshed proxmox session")
+				ig.log.Info("refreshed proxmox session")
 			}()
 		}
 	}
