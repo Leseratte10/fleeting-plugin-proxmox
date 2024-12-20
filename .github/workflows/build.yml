@@ -20,3 +20,8 @@ jobs:
         with:
           fetch-depth: 0
       - run: go build -o fleeting-plugin-proxmox ./cmd/fleeting-plugin-proxmox
+      - uses: actions/upload-artifact@v4
+        with:
+          name: upload
+          path: fleeting-plugin-proxmox
+          retention-days: 1
