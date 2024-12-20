@@ -15,6 +15,16 @@ import (
 
 var ErrNotFound = errors.New("not found")
 
+type Credentials struct {
+	Username  string `json:"username"`
+	Password  string `json:"password"`	          // Password or token secret
+	TokenID   string `json:"token,omitifempty"`
+	OtpSecret string `json:"otpsecret,omitempty"` // Secret token for OTP generation
+	Path      string `json:"path,omitempty"`
+	Privs     string `json:"privs,omitempty"`
+	Realm     string `json:"realm,omitempty"`
+}
+
 func (ig *InstanceGroup) getProxmoxPool(ctx context.Context) (*proxmox.Pool, error) {
 	pool, err := ig.proxmox.Pool(ctx, ig.Settings.Pool)
 	if err != nil {
@@ -78,21 +88,42 @@ func (ig *InstanceGroup) getProxmoxClient() (*proxmox.Client, error) {
 		},
 	}
 
-	return proxmox.NewClient(
-		url.JoinPath("/api2/json").String(),
-		proxmox.WithCredentials(credentials),
-		proxmox.WithHTTPClient(&httpClient),
-	), nil
+	if credentials.TokenID == "" {
+		// No token, normal login with username and password
+		proxmoxCredentials := proxmox.Credentials{}
+		proxmoxCredentials.Username = credentials.Username
+		proxmoxCredentials.Password = credentials.Password
+		proxmoxCredentials.Path     = credentials.Path
+		proxmoxCredentials.Privs    = credentials.Privs
+		proxmoxCredentials.Realm    = credentials.Realm
+
+		return proxmox.NewClient(
+			url.JoinPath("/api2/json").String(),
+			proxmox.WithCredentials(proxmoxCredentials),
+			proxmox.WithHTTPClient(&httpClient),
+		), nil
+	} else {
+		// Token available, log in with API token
+		apiToken := fmt.Sprintf("%s@%s!%s", credentials.Username, credentials.Realm, credentials.TokenID)
+
+		return proxmox.NewClient(
+			url.JoinPath("/api2/json").String(),
+			proxmox.WithAPIToken(apiToken, credentials.Password),
+			proxmox.WithHTTPClient(&httpClient),
+		), nil
+	}
+
+	
 }
 
-func (ig *InstanceGroup) getProxmoxCredentials() (*proxmox.Credentials, error) {
+func (ig *InstanceGroup) getProxmoxCredentials() (*Credentials, error) {
 	credentialsFile, err := os.Open(ig.Settings.CredentialsFilePath)
 	if err != nil {
 		return nil, fmt.Errorf("failed to open credentials file from path='%s': %w", ig.Settings.CredentialsFilePath, err)
 	}
 	defer credentialsFile.Close()
 
-	credentials := proxmox.Credentials{}
+	credentials := Credentials{}
 	if err := json.NewDecoder(credentialsFile).Decode(&credentials); err != nil {
 		return nil, fmt.Errorf("failed to decode credentials file from path='%s': %w", ig.Settings.CredentialsFilePath, err)
 	}
