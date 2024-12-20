@@ -49,7 +49,7 @@ func (ig *InstanceGroup) runSessionTicketRefresher() {
 					ig.log.Error("failed to refresh proxmox session", "err", err)
 				}
 
-				ig.log.Error("refreshed proxmox session")
+				ig.log.Info("refreshed proxmox session")
 			}()
 		}
 	}
