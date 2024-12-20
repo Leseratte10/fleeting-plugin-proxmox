@@ -6,7 +6,7 @@ import (
 )
 
 const (
-	sessionTicketRefreshInterval = 1 * time.Hour
+	sessionTicketRefreshInterval = 60 * time.Second
 	sessionTicketRefreshTimeout  = 5 * time.Second
 )
 
@@ -36,7 +36,7 @@ func (ig *InstanceGroup) runSessionTicketRefresher() {
 					ig.log.Error("failed to refresh proxmox session", "err", err)
 				}
 
-				ig.log.Info("refreshed proxmox session")
+				ig.log.Error("refreshed proxmox session")
 			}()
 		}
 	}
