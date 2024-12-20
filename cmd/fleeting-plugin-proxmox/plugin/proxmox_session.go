@@ -15,10 +15,11 @@ func (ig *InstanceGroup) startSessionTicketRefresher() {
 
 	go func() {
 		defer ig.sessionTicketRefresherWaitGroup.Done()
-		ig.runSessionTicketRefresher()
+		//ig.runSessionTicketRefresher()
 	}()
 }
 
+/*
 func (ig *InstanceGroup) runSessionTicketRefresher() {
 	for {
 		select {
@@ -45,3 +46,4 @@ func (ig *InstanceGroup) runSessionTicketRefresher() {
 		}
 	}
 }
+*/

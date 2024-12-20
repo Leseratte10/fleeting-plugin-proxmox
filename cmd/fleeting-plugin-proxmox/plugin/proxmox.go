@@ -99,7 +99,7 @@ func (ig *InstanceGroup) getProxmoxClient() (*proxmox.Client, error) {
 
 		return proxmox.NewClient(
 			url.JoinPath("/api2/json").String(),
-			proxmox.WithCredentials(proxmoxCredentials),
+			proxmox.WithCredentials(&proxmoxCredentials),
 			proxmox.WithHTTPClient(&httpClient),
 		), nil
 	} else {
