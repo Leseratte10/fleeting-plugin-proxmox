@@ -1,6 +1,7 @@
 package plugin
 
 import (
+	"context"
 	"time"
 )
 
@@ -14,11 +15,11 @@ func (ig *InstanceGroup) startSessionTicketRefresher() {
 
 	go func() {
 		defer ig.sessionTicketRefresherWaitGroup.Done()
-		// ig.runSessionTicketRefresher()
+		ig.runSessionTicketRefresher()
 	}()
 }
 
-/*
+
 func (ig *InstanceGroup) runSessionTicketRefresher() {
 	for {
 		select {
@@ -29,13 +30,8 @@ func (ig *InstanceGroup) runSessionTicketRefresher() {
 				ctx, cancel := context.WithTimeout(context.Background(), sessionTicketRefreshTimeout)
 				defer cancel()
 
-				credentials, err := ig.getProxmoxCredentials()
-				if err != nil {
-					ig.log.Error("failed to refresh proxmox session, could not read credentials", "err", err)
-					return
-				}
-
-				_, err = ig.proxmox.Ticket(ctx, credentials)
+				// Refresh Ticket using old Ticket
+				_, err := ig.proxmox.Ticket(ctx, nil)
 				if err != nil {
 					ig.log.Error("failed to refresh proxmox session", "err", err)
 				}
@@ -45,4 +41,3 @@ func (ig *InstanceGroup) runSessionTicketRefresher() {
 		}
 	}
 }
-*/
